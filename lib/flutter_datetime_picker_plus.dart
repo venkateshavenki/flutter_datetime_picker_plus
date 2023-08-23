@@ -5,15 +5,16 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_datetime_picker_plus/src/date_model.dart';
-import 'package:flutter_datetime_picker_plus/src/datetime_picker_theme.dart'
-    as picker_theme;
+import 'package:flutter_datetime_picker_plus/src/datetime_picker_theme.dart' as picker_theme;
 import 'package:flutter_datetime_picker_plus/src/i18n_model.dart';
 
 export 'package:flutter_datetime_picker_plus/src/date_model.dart';
 export 'package:flutter_datetime_picker_plus/src/datetime_picker_theme.dart';
 export 'package:flutter_datetime_picker_plus/src/i18n_model.dart';
 
-typedef DateChangedCallback(DateTime time);
+DateTime? temp;
+
+typedef DateChangedCallback(temp, bool dayOptional, bool monthOptional);
 typedef DateCancelledCallback();
 typedef String? StringAtIndexCallBack(int index);
 
@@ -24,6 +25,7 @@ class DatePicker {
   static Future<DateTime?> showDatePicker(
     BuildContext context, {
     bool showTitleActions = true,
+    bool isOptional = true,
     DateTime? minTime,
     DateTime? maxTime,
     DateChangedCallback? onChanged,
@@ -42,13 +44,13 @@ class DatePicker {
         onCancel: onCancel,
         locale: locale,
         theme: theme,
-        barrierLabel:
-            MaterialLocalizations.of(context).modalBarrierDismissLabel,
+        barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
         pickerModel: DatePickerModel(
           currentTime: currentTime,
           maxTime: maxTime,
           minTime: minTime,
           locale: locale,
+          isOptional: isOptional,
         ),
       ),
     );
@@ -77,8 +79,7 @@ class DatePicker {
         onCancel: onCancel,
         locale: locale,
         theme: theme,
-        barrierLabel:
-            MaterialLocalizations.of(context).modalBarrierDismissLabel,
+        barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
         pickerModel: TimePickerModel(
           currentTime: currentTime,
           locale: locale,
@@ -110,8 +111,7 @@ class DatePicker {
         onCancel: onCancel,
         locale: locale,
         theme: theme,
-        barrierLabel:
-            MaterialLocalizations.of(context).modalBarrierDismissLabel,
+        barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
         pickerModel: Time12hPickerModel(
           currentTime: currentTime,
           locale: locale,
@@ -144,8 +144,7 @@ class DatePicker {
         onCancel: onCancel,
         locale: locale,
         theme: theme,
-        barrierLabel:
-            MaterialLocalizations.of(context).modalBarrierDismissLabel,
+        barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
         pickerModel: DateTimePickerModel(
           currentTime: currentTime,
           minTime: minTime,
@@ -178,8 +177,7 @@ class DatePicker {
         onCancel: onCancel,
         locale: locale,
         theme: theme,
-        barrierLabel:
-            MaterialLocalizations.of(context).modalBarrierDismissLabel,
+        barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
         pickerModel: pickerModel,
       ),
     );
@@ -226,14 +224,12 @@ class _DatePickerRoute<T> extends PopupRoute<T> {
   @override
   AnimationController createAnimationController() {
     assert(_animationController == null);
-    _animationController =
-        BottomSheet.createAnimationController(navigator!.overlay!);
+    _animationController = BottomSheet.createAnimationController(navigator!.overlay!);
     return _animationController!;
   }
 
   @override
-  Widget buildPage(BuildContext context, Animation<double> animation,
-      Animation<double> secondaryAnimation) {
+  Widget buildPage(BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
     Widget bottomSheet = MediaQuery.removePadding(
       context: context,
       removeTop: true,
@@ -272,9 +268,7 @@ class _DatePickerComponent extends StatefulWidget {
 }
 
 class _DatePickerState extends State<_DatePickerComponent> {
-  late FixedExtentScrollController leftScrollCtrl,
-      middleScrollCtrl,
-      rightScrollCtrl;
+  late FixedExtentScrollController leftScrollCtrl, middleScrollCtrl, rightScrollCtrl;
 
   @override
   void initState() {
@@ -284,12 +278,9 @@ class _DatePickerState extends State<_DatePickerComponent> {
 
   void refreshScrollOffset() {
 //    print('refreshScrollOffset ${widget.pickerModel.currentRightIndex()}');
-    leftScrollCtrl = FixedExtentScrollController(
-        initialItem: widget.pickerModel.currentLeftIndex());
-    middleScrollCtrl = FixedExtentScrollController(
-        initialItem: widget.pickerModel.currentMiddleIndex());
-    rightScrollCtrl = FixedExtentScrollController(
-        initialItem: widget.pickerModel.currentRightIndex());
+    leftScrollCtrl = FixedExtentScrollController(initialItem: widget.pickerModel.currentLeftIndex());
+    middleScrollCtrl = FixedExtentScrollController(initialItem: widget.pickerModel.currentMiddleIndex());
+    rightScrollCtrl = FixedExtentScrollController(initialItem: widget.pickerModel.currentRightIndex());
   }
 
   @override
@@ -323,7 +314,9 @@ class _DatePickerState extends State<_DatePickerComponent> {
 
   void _notifyDateChanged() {
     if (widget.onChanged != null) {
-      widget.onChanged!(widget.pickerModel.finalTime()!);
+      final bool monthOptionalStatus = widget.pickerModel.middleStringAtIndex(widget.pickerModel.currentMiddleIndex()) == "Optional";
+      final bool dayOptionalStatus = widget.pickerModel.rightStringAtIndex(widget.pickerModel.currentRightIndex()) == "Optional";
+      widget.onChanged!(widget.pickerModel.finalTime()!, dayOptionalStatus, monthOptionalStatus);
     }
   }
 
@@ -357,11 +350,8 @@ class _DatePickerState extends State<_DatePickerComponent> {
         decoration: BoxDecoration(color: theme.backgroundColor),
         child: NotificationListener(
           onNotification: (ScrollNotification notification) {
-            if (notification.depth == 0 &&
-                notification is ScrollEndNotification &&
-                notification.metrics is FixedExtentMetrics) {
-              final FixedExtentMetrics metrics =
-                  notification.metrics as FixedExtentMetrics;
+            if (notification.depth == 0 && notification is ScrollEndNotification && notification.metrics is FixedExtentMetrics) {
+              final FixedExtentMetrics metrics = notification.metrics as FixedExtentMetrics;
               final int currentItemIndex = metrics.itemIndex;
               selectedChangedWhenScrollEnd(currentItemIndex);
             }
@@ -407,12 +397,7 @@ class _DatePickerState extends State<_DatePickerComponent> {
           children: <Widget>[
             Container(
               child: widget.pickerModel.layoutProportions()[0] > 0
-                  ? _renderColumnView(
-                      ValueKey(widget.pickerModel.currentLeftIndex()),
-                      theme,
-                      widget.pickerModel.leftStringAtIndex,
-                      leftScrollCtrl,
-                      widget.pickerModel.layoutProportions()[0], (index) {
+                  ? _renderColumnView(ValueKey(widget.pickerModel.currentLeftIndex()), theme, widget.pickerModel.leftStringAtIndex, leftScrollCtrl, widget.pickerModel.layoutProportions()[0], (index) {
                       widget.pickerModel.setLeftIndex(index);
                     }, (index) {
                       setState(() {
@@ -428,12 +413,8 @@ class _DatePickerState extends State<_DatePickerComponent> {
             ),
             Container(
               child: widget.pickerModel.layoutProportions()[1] > 0
-                  ? _renderColumnView(
-                      ValueKey(widget.pickerModel.currentLeftIndex()),
-                      theme,
-                      widget.pickerModel.middleStringAtIndex,
-                      middleScrollCtrl,
-                      widget.pickerModel.layoutProportions()[1], (index) {
+                  ? _renderColumnView(ValueKey(widget.pickerModel.currentLeftIndex()), theme, widget.pickerModel.middleStringAtIndex, middleScrollCtrl, widget.pickerModel.layoutProportions()[1],
+                      (index) {
                       widget.pickerModel.setMiddleIndex(index);
                     }, (index) {
                       setState(() {
@@ -449,12 +430,7 @@ class _DatePickerState extends State<_DatePickerComponent> {
             ),
             Container(
               child: widget.pickerModel.layoutProportions()[2] > 0
-                  ? _renderColumnView(
-                      ValueKey(widget.pickerModel.currentMiddleIndex() * 100 +
-                          widget.pickerModel.currentLeftIndex()),
-                      theme,
-                      widget.pickerModel.rightStringAtIndex,
-                      rightScrollCtrl,
+                  ? _renderColumnView(ValueKey(widget.pickerModel.currentMiddleIndex() * 100 + widget.pickerModel.currentLeftIndex()), theme, widget.pickerModel.rightStringAtIndex, rightScrollCtrl,
                       widget.pickerModel.layoutProportions()[2], (index) {
                       widget.pickerModel.setRightIndex(index);
                     }, (index) {
@@ -491,7 +467,12 @@ class _DatePickerState extends State<_DatePickerComponent> {
               padding: EdgeInsetsDirectional.only(start: 16, top: 0),
               child: Text(
                 '$cancel',
-                style: theme.cancelStyle,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontFamily: 'NimbusBold',
+                  color: const Color(0Xfff0f2f2).withOpacity(0.3),
+                ),
               ),
               onPressed: () {
                 Navigator.pop(context);
@@ -508,12 +489,22 @@ class _DatePickerState extends State<_DatePickerComponent> {
               padding: EdgeInsetsDirectional.only(end: 16, top: 0),
               child: Text(
                 '$done',
-                style: theme.doneStyle,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'NimbusBold', color: const Color(0Xfff0f2f2)),
               ),
               onPressed: () {
                 Navigator.pop(context, widget.pickerModel.finalTime());
                 if (widget.route.onConfirm != null) {
-                  widget.route.onConfirm!(widget.pickerModel.finalTime()!);
+                  int value = widget.pickerModel.middleStringAtIndex(widget.pickerModel.currentMiddleIndex()) != "Optional"
+                      ? widget.pickerModel.currentMiddleIndex() + 1
+                      : widget.pickerModel.currentMiddleIndex() - 1;
+                  bool monthOptionalStatus = widget.pickerModel.middleStringAtIndex(widget.pickerModel.currentMiddleIndex()) == "Optional";
+                  bool dayOptionalStatus = widget.pickerModel.rightStringAtIndex(widget.pickerModel.currentRightIndex()) == "Optional";
+                  DateTime? time = widget.pickerModel.finalTime();
+                  temp = new DateTime(int.parse("${widget.pickerModel.leftStringAtIndex(widget.pickerModel.currentLeftIndex())}"), monthOptionalStatus ? 1 : value, dayOptionalStatus ? 1 : time!.day,
+                      time!.hour, time.minute, time.second, time.millisecond, time.microsecond);
+
+                  Navigator.pop(context, temp);
+                  widget.route.onConfirm!(temp!, dayOptionalStatus, monthOptionalStatus);
                 }
               },
             ),
