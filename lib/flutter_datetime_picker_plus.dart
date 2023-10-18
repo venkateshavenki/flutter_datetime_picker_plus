@@ -348,6 +348,7 @@ class _DatePickerState extends State<_DatePickerComponent> {
         padding: EdgeInsets.all(8.0),
         height: theme.containerHeight,
         decoration: BoxDecoration(color: theme.backgroundColor),
+        color: Colors.black,
         child: NotificationListener(
           onNotification: (ScrollNotification notification) {
             if (notification.depth == 0 && notification is ScrollEndNotification && notification.metrics is FixedExtentMetrics) {
@@ -359,7 +360,7 @@ class _DatePickerState extends State<_DatePickerComponent> {
           },
           child: CupertinoPicker.builder(
             key: key,
-            backgroundColor: theme.backgroundColor,
+            backgroundColor: Colors.black,
             scrollController: scrollController as FixedExtentScrollController,
             itemExtent: theme.itemHeight,
             onSelectedItemChanged: (int index) {
@@ -391,7 +392,7 @@ class _DatePickerState extends State<_DatePickerComponent> {
     return Container(
       color: theme.backgroundColor,
       child: Directionality(
-        textDirection: TextDirection.ltr,
+        textDirection: TextDirection.rtl,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: <Widget>[
@@ -455,13 +456,14 @@ class _DatePickerState extends State<_DatePickerComponent> {
     return Container(
       height: theme.titleHeight,
       decoration: BoxDecoration(
-        color: theme.headerColor ?? theme.backgroundColor,
+        color: Colors.black,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Container(
             height: theme.titleHeight,
+            padding: EdgeInsets.only(top: 3, bottom: 3, right: 15, left: 15),
             child: CupertinoButton(
               pressedOpacity: 0.3,
               padding: EdgeInsetsDirectional.only(start: 16, top: 0),
@@ -483,7 +485,9 @@ class _DatePickerState extends State<_DatePickerComponent> {
             ),
           ),
           Container(
-            height: theme.titleHeight,
+            padding: EdgeInsetsDirectional.only(end: 0, top: 0),
+            height: 24,
+            width: 75,
             child: CupertinoButton(
               pressedOpacity: 0.3,
               padding: EdgeInsetsDirectional.only(end: 16, top: 0),
